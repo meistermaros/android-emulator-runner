@@ -2,6 +2,16 @@ import * as exec from '@actions/exec';
 import * as fs from 'fs';
 
 /**
+ * Specific port for Android Emulator
+ */
+const emulatorPort = 5586;
+
+/**
+ * Parameter for ADB to start/kill emulator on specified port
+ */
+const adbDeviceParam = `-s "emulator-${emulatorPort}"`;
+
+/**
  * Creates and launches a new AVD instance with the specified configurations.
  */
 export async function launchEmulator(
@@ -64,10 +74,10 @@ export async function launchEmulator(
 
     // add a specific port to not have problems with running emulator
     // https://developer.android.com/studio/run/emulator-commandline
-    emulatorOptions += ' -port 5682';
+    emulatorOptions += ` -port ${emulatorPort}`;
 
     // start emulator
-    console.log('Starting emulator.');
+    console.log(`Starting emulator on port ${emulatorPort}.`);
 
     await exec.exec(`sh -c \\"${process.env.ANDROID_HOME}/emulator/emulator -avd "${avdName}" ${emulatorOptions} &"`, [], {
       listeners: {
@@ -81,19 +91,19 @@ export async function launchEmulator(
 
     // wait for emulator to complete booting
     await waitForDevice(emulatorBootTimeout);
-    await exec.exec(`adb -s emulator-5682 shell input keyevent 82`);
+    await exec.exec(`adb ${adbDeviceParam} shell input keyevent 82`);
 
     if (disableAnimations) {
       console.log('Disabling animations.');
-      await exec.exec(`adb -s emulator-5682 shell settings put global window_animation_scale 0.0`);
-      await exec.exec(`adb -s emulator-5682 shell settings put global transition_animation_scale 0.0`);
-      await exec.exec(`adb -s emulator-5682 shell settings put global animator_duration_scale 0.0`);
+      await exec.exec(`adb ${adbDeviceParam} shell settings put global window_animation_scale 0.0`);
+      await exec.exec(`adb ${adbDeviceParam} shell settings put global transition_animation_scale 0.0`);
+      await exec.exec(`adb ${adbDeviceParam} shell settings put global animator_duration_scale 0.0`);
     }
     if (disableSpellChecker) {
-      await exec.exec(`adb -s emulator-5682 shell settings put secure spell_checker_enabled 0`);
+      await exec.exec(`adb ${adbDeviceParam} shell settings put secure spell_checker_enabled 0`);
     }
     if (enableHardwareKeyboard) {
-      await exec.exec(`adb -s emulator-5682 shell settings put secure show_ime_with_hard_keyboard 0`);
+      await exec.exec(`adb ${adbDeviceParam} shell settings put secure show_ime_with_hard_keyboard 0`);
     }
   } finally {
     console.log(`::endgroup::`);
@@ -106,7 +116,7 @@ export async function launchEmulator(
 export async function killEmulator(): Promise<void> {
   try {
     console.log(`::group::Terminate Emulator`);
-    await exec.exec(`adb -s emulator-5682 emu kill`);
+    await exec.exec(`adb ${adbDeviceParam} emu kill`);
   } catch (error) {
     console.log(error instanceof Error ? error.message : error);
   } finally {
@@ -125,7 +135,7 @@ async function waitForDevice(emulatorBootTimeout: number): Promise<void> {
   while (!booted) {
     try {
       let result = '';
-      await exec.exec(`adb -s emulator-5682 shell getprop sys.boot_completed`, [], {
+      await exec.exec(`adb ${adbDeviceParam} shell getprop sys.boot_completed`, [], {
         listeners: {
           stdout: (data: Buffer) => {
             result += data.toString();
