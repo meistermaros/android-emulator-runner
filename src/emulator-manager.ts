@@ -2,16 +2,6 @@ import * as exec from '@actions/exec';
 import * as fs from 'fs';
 
 /**
- * Specific port for Android Emulator
- */
-const emulatorPort = 5586;
-
-/**
- * Parameter for ADB to start/kill emulator on specified port
- */
-const adbDeviceParam = `-s "emulator-${emulatorPort}"`;
-
-/**
  * Creates and launches a new AVD instance with the specified configurations.
  */
 export async function launchEmulator(
@@ -31,10 +21,14 @@ export async function launchEmulator(
   disableAnimations: boolean,
   disableSpellChecker: boolean,
   disableLinuxHardwareAcceleration: boolean,
-  enableHardwareKeyboard: boolean
+  enableHardwareKeyboard: boolean,
+  emulatorPort: number
 ): Promise<void> {
   try {
     console.log(`::group::Launch Emulator`);
+
+    const adbDeviceParam = `-s "emulator-${emulatorPort}"`;
+
     // create a new AVD if AVD directory does not already exist or forceAvdCreation is true
     const avdPath = `${process.env.ANDROID_AVD_HOME}/${avdName}.avd`;
     if (!fs.existsSync(avdPath) || forceAvdCreation) {
@@ -90,7 +84,7 @@ export async function launchEmulator(
     });
 
     // wait for emulator to complete booting
-    await waitForDevice(emulatorBootTimeout);
+    await waitForDevice(emulatorBootTimeout, emulatorPort);
     await exec.exec(`adb ${adbDeviceParam} shell input keyevent 82`);
 
     if (disableAnimations) {
@@ -113,8 +107,10 @@ export async function launchEmulator(
 /**
  * Kills the running emulator on the default port.
  */
-export async function killEmulator(): Promise<void> {
+export async function killEmulator(emulatorPort: number): Promise<void> {
   try {
+    const adbDeviceParam = `-s "emulator-${emulatorPort}"`;
+
     console.log(`::group::Terminate Emulator`);
     await exec.exec(`adb ${adbDeviceParam} emu kill`);
   } catch (error) {
@@ -127,11 +123,13 @@ export async function killEmulator(): Promise<void> {
 /**
  * Wait for emulator to boot.
  */
-async function waitForDevice(emulatorBootTimeout: number): Promise<void> {
+async function waitForDevice(emulatorBootTimeout: number, emulatorPort: number): Promise<void> {
   let booted = false;
   let attempts = 0;
   const retryInterval = 2; // retry every 2 seconds
   const maxAttempts = emulatorBootTimeout / 2;
+  const adbDeviceParam = `-s "emulator-${emulatorPort}"`;
+
   while (!booted) {
     try {
       let result = '';

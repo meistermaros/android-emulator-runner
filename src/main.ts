@@ -176,6 +176,11 @@ async function run() {
     });
     console.log(`::endgroup::`);
 
+    // custom port number
+    const emulatorPortInput = parseInt(core.getInput('port'));
+    const emulatorPort = !emulatorPortInput ? 5554 : emulatorPortInput;
+    console.log(`Emulator port: ${emulatorPort}`);
+
     // install SDK
     await installAndroidSdk(apiLevel, target, arch, channelId, emulatorBuild, ndkVersion, cmakeVersion);
 
@@ -214,7 +219,8 @@ async function run() {
       disableAnimations,
       disableSpellchecker,
       disableLinuxHardwareAcceleration,
-      enableHardwareKeyboard
+      enableHardwareKeyboard,
+      emulatorPort
     );
 
     // execute the custom script
@@ -233,10 +239,13 @@ async function run() {
     }
 
     // finally kill the emulator
-    await killEmulator();
+    await killEmulator(emulatorPort);
   } catch (error) {
     // kill the emulator so the action can exit
-    await killEmulator();
+    const emulatorPortInput = parseInt(core.getInput('port'));
+    const emulatorPort = !emulatorPortInput ? 5554 : emulatorPortInput;
+
+    await killEmulator(emulatorPort);
     core.setFailed(error instanceof Error ? error.message : (error as string));
   }
 }

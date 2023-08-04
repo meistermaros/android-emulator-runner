@@ -67,6 +67,9 @@ inputs:
     required: true
   pre-emulator-launch-script:
     description: 'custom script to run after creating the AVD and before launching the emulator - e.g. `./adjust-emulator-configs.sh`'
+  port:
+    description: 'Port number of emulator that is used as a name (eg. emulator-5554)'
+    default: 5554
 runs:
   using: 'node16'
   main: 'lib/main.js'

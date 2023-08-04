@@ -66,3 +66,5 @@ inputs:
    type: string
   pre-emulator-launch-script:
    type: string
+  port:
+    type: integer
